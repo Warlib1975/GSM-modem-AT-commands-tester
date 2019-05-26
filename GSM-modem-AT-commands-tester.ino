@@ -31,7 +31,6 @@ GSM_SIM800 modemGSM(Serial2);
 
 int Modem_Reboots_Counter = 0;
 
-
 void Init_GSM_SIM800() 
 {
   Serial.println("Initialize GSM modem...");
@@ -56,21 +55,8 @@ void Init_GSM_SIM800()
     Serial.println("Modem restart OK");
   }
 
+  modemGSM.SetAutoTimeSync();
   
-  Serial.println("Set AT+CLTS=1");
-  modemGSM.sendAT("AT+CLTS=1");
-  modemGSM.waitResponse();
-  delay(3000);
-  modemGSM.sendAT("AT&W");
-  modemGSM.waitResponse();
-  delay(3000);
-  modemGSM.sendAT("AT+CFUN=0");
-  modemGSM.waitResponse();
-  delay(3000);
-  modemGSM.sendAT("AT+CFUN=1");
-  modemGSM.waitResponse();
-  delay(3000);
-
   if (modemGSM.getSimStatus() != SIM_READY)
   {
     Serial.println("Check PIN code for the SIM. SIM status: " + SimStatus(modemGSM.getSimStatus()));
@@ -137,6 +123,11 @@ void Init_GSM_SIM800()
   modemGSM.waitResponse();
 }
 
+//Parse GSM modem DateTime string "yy/mm/dd,hh:mm:ss+/-zz"
+bool ParseDateTimeString(String datetime, byte &year, byte &month, byte &day, byte &hours, byte &minutes, byte &seconds, byte &timezone)
+{ 
+   return sscanf(datetime.c_str(), "%d/%d/%d,%d:%d:%d+%d", &year, &month, &day, &hours, &minutes, &seconds, &timezone) == 7;
+}
 
 void RestartGSMModem()
 {
@@ -188,6 +179,21 @@ void setup() {
   String data = modemGSM.stream.readStringUntil('\n');
   Serial.println("Stop waiting for the response.");  
   Serial.println("Data: " + data);*/
+
+
+  byte year = 0;
+  byte month = 0;
+  byte day = 0; 
+  byte hours = 0;
+  byte minutes = 0;
+  byte seconds = 0;
+  byte timezone = 0;
+  ParseDateTimeString("19/05/25,21:50:06+12", year, month, day, hours, minutes, seconds, timezone);
+  char str[25];
+  sprintf(str, "%d/%d/%d,%d:%d:%d+%d", year, month, day, hours, minutes, seconds, timezone);
+  Serial.println(str);
+
+  Serial.println(modemGSM.ShowNTPError(modemGSM.NTPServerSync()));
 }
 
 int lastMillis = 0;
